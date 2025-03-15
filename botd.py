@@ -66,7 +66,7 @@ async def process_queue():
             break
         url, update, context = item
         current_download = url  # تعيين الملف الحالي
-        title, file_path = download_video(url)
+        title, file_path = await asyncio.to_thread(download_video, url)
         if title and file_path:
             try:
                 await context.bot.send_message(chat_id=update.effective_chat.id, text=f"Download complete: {title}")
@@ -132,9 +132,10 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("No active download.")
 
 # تشغيل البوت
-if __name__ == "__main__":
-    # استبدل 'YOUR_TOKEN' بالرمز المميز الخاص ببوتك
-    application = Application.builder().token("7336372322:AAEtIUcY6nNEEGZzIMjJdfYMTAMsLpTSpzk").build()
+async def main():
+    # استخدام التوكن مباشرة (لأغراض الاختبار فقط)
+    TOKEN = "7336372322:AAEtIUcY6nNEEGZzIMjJdfYMTAMsLpTSpzk"
+    application = Application.builder().token(TOKEN).build()
 
     # إضافة معالجات الأوامر والرسائل
     application.add_handler(CommandHandler("start", start))
@@ -145,12 +146,10 @@ if __name__ == "__main__":
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
     # بدء معالجة قائمة الانتظار في خيط منفصل
-    def start_queue_processing():
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(process_queue())
-
-    threading.Thread(target=start_queue_processing, daemon=True).start()
+    threading.Thread(target=lambda: asyncio.run(process_queue()), daemon=True).start()
 
     # بدء البوت
-    application.run_polling()
+    await application.run_polling()
+
+if __name__ == "__main__":
+    asyncio.run(main())
